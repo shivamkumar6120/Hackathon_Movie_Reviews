@@ -1,6 +1,8 @@
 //default import
 const express = require('express')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken') 
+
 
 //custome import
 const pool = require("../utils/db");
@@ -26,7 +28,7 @@ router.get("/", (req, res) => {
     })
 });
 
-//user singup
+//user sing up
 
 router.post("/signup",async (req, res) => {
 
@@ -54,6 +56,46 @@ router.post("/signup",async (req, res) => {
 })
 
 
+
+
+//sign in (log in)
+router.post("/signin", (req, res) => { 
+    const { email, password } = req.body
+    const sql = `SELECT * FROM USERS WHERE email = ?` 
+
+    pool.query(sql, [email], async (error, data) => {
+        
+        if (error) {
+            return res.status(500).send({ status: "error", message: "Database query failed", error: error });
+        }
+
+        if (data.length > 0) {
+            const dbUser = data[0] 
+            const userValid = await bcrypt.compare(password, dbUser.password)
+            
+            if (userValid) {
+                const payload = {
+                    uid: dbUser.ID 
+                }
+                const token = jwt.sign(payload, config.secret)
+                
+                res.status(200).send({
+                    status: "Success",
+                    data: {
+                        token: token,
+                        first_name: dbUser.first_name,
+                        email: dbUser.email
+                    }
+                });
+
+            } else {
+                res.status(401).send({ status: "Error", message: "Invalid Password" });
+            }
+        } else {
+            res.status(401).send({ status: "Error", message: "Invalid Email" });
+        }
+    });
+});
 
 
 module.exports = router;
