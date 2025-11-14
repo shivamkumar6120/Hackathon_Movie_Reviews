@@ -1,7 +1,7 @@
 //default import
 const express = require('express')
 const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken') 
+const jwt = require('jsonwebtoken')
 
 
 //custome import
@@ -30,55 +30,53 @@ router.get("/", (req, res) => {
 
 //user sing up
 
-router.post("/signup",async (req, res) => {
+router.post("/signup", async (req, res) => {
 
 
-    const { first_name, last_name, email, password, mobile, birth } = req.body 
-    
+    const { first_name, last_name, email, password, mobile, birth } = req.body
+
 
     const sql = `INSERT INTO USERS(first_name, last_name, email, password, mobile, birth) VALUES(?, ?, ?, ?, ?, ?)`
 
     console.log(req.body)
-    try{
-        const hashedPassword = await bcrypt.hash(password, config.saltRound) 
-        
-        pool.query(sql,[first_name, last_name, email, hashedPassword, mobile, birth],(error,data)=>{
-            if(data){
-                res.send({status : "Success", data})
+    try {
+        const hashedPassword = await bcrypt.hash(password, config.saltRound)
+
+        pool.query(sql, [first_name, last_name, email, hashedPassword, mobile, birth], (error, data) => {
+            if (data) {
+                res.send({ status: "Success", data })
             }
-            else{
-                res.send({status : "Error", error}) 
+            else {
+                res.send({ status: "Error", error })
             }
         })
-    }catch(error){
-        res.send({status : "error", error})
+    } catch (error) {
+        res.send({ status: "error", error })
     }
 })
 
 
-
-
-//sign in (log in)
-router.post("/signin", (req, res) => { 
+// //sign in (log in)
+router.post("/login", (req, res) => {
     const { email, password } = req.body
-    const sql = `SELECT * FROM USERS WHERE email = ?` 
+    const sql = `SELECT * FROM USERS WHERE email = ?`
 
     pool.query(sql, [email], async (error, data) => {
-        
+
         if (error) {
             return res.status(500).send({ status: "error", message: "Database query failed", error: error });
         }
 
         if (data.length > 0) {
-            const dbUser = data[0] 
+            const dbUser = data[0]
             const userValid = await bcrypt.compare(password, dbUser.password)
-            
+
             if (userValid) {
                 const payload = {
-                    uid: dbUser.ID 
+                    uid: dbUser.ID
                 }
                 const token = jwt.sign(payload, config.secret)
-                
+
                 res.status(200).send({
                     status: "Success",
                     data: {
@@ -97,6 +95,25 @@ router.post("/signin", (req, res) => {
     });
 });
 
+
+
+//edit user profile
+router.put('/update', (req, res) => {
+  const { first_name, last_name, mobile,birth } = req.body
+  const sql = `UPDATE user SET firstName=?, lastName=?, phoneNumber=? WHERE email = ?`
+  pool.query(
+    sql,
+    [first_name, last_name, mobile,birth ,req.headers.email],
+    (error, data) => {
+      res.send({status : "Success",data})
+    }
+  )
+})
+
+//change password
+router.put('/change/password',(req,res)=>{
+    
+})
 
 module.exports = router;
 
